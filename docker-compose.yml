@@ -1,0 +1,69 @@
+# Local development environment: a single-node MongoDB replica set (required
+# for multi-document transactions) plus the API container.
+#
+#   docker compose up -d mongo        # database only (no Docker daemon build)
+#   docker compose up --build api     # full stack
+#
+# The api service runs the compiled server. NODE_ENV=development keeps the
+# local container convenient (mock payments auto-approve, permissive CORS);
+# real deployments are covered by render.yaml and docs/DEPLOYMENT.md.
+services:
+  mongo:
+    image: mongo:7
+    container_name: ecommerce-mongo
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--port", "27017", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # One-shot: initializes the replica set once mongod is accepting connections.
+  mongo-init:
+    image: mongo:7
+    container_name: ecommerce-mongo-init
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command:
+      - mongosh
+      - --quiet
+      - mongodb://mongo:27017/admin
+      - --eval
+      - "try { rs.status(); print('replica set already initialized') } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}); print('replica set initialized') }"
+    restart: "no"
+
+  api:
+    build: .
+    container_name: ecommerce-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 3001
+      DATABASE_URL: mongodb://mongo:27017/ecommerce?replicaSet=rs0
+      CORS_ORIGIN: http://localhost:5173,http://localhost:3001
+      FRONTEND_URL: http://localhost:5173
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-7d1f5c9e2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a}
+      LOGIN_MAX_ATTEMPTS: 5
+      ACCOUNT_LOCK_MINUTES: 15
+      PAYMENT_PROVIDER: mock
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c}
+      PAYMENT_MOCK_AUTO_APPROVE: "true"
+    ports:
+      - "3001:3001"
+
+volumes:
+  mongo-data:

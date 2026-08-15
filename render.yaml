@@ -1,0 +1,45 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+#
+# Deploys the API as a web service. MongoDB is expected to be external (Atlas
+# M10+ replica set or similar) — set DATABASE_URL to its connection string via
+# the dashboard or the `render deploy hook` after first deploy.
+#
+#   render blueprint launch    # first deploy
+#   render blueprint apply     # subsequent deploys
+services:
+  - type: web
+    name: ecommerce-backend
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/core/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false # set in the dashboard: mongodb+srv://<user>:<pass>@<cluster>/ecommerce?replicaSet=<rs>
+      - key: JWT_ACCESS_SECRET
+        sync: false # generate: openssl rand -hex 48
+      - key: JWT_REFRESH_SECRET
+        sync: false # generate: openssl rand -hex 48
+      - key: CORS_ORIGIN
+        value: https://your-frontend.example.com
+      - key: FRONTEND_URL
+        value: https://your-frontend.example.com
+      - key: LOGIN_MAX_ATTEMPTS
+        value: "5"
+      - key: ACCOUNT_LOCK_MINUTES
+        value: "15"
+      - key: PAYMENT_PROVIDER
+        value: mock
+      - key: PAYMENT_WEBHOOK_SECRET
+        sync: false # generate: openssl rand -hex 32
+      - key: PAYMENT_MOCK_AUTO_APPROVE
+        value: "true"
+      - key: ALLOW_MOCK_AUTO_APPROVE_IN_PRODUCTION
+        value: "true" # demo: allows checkout to complete without a real gateway

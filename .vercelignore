@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+tests
+coverage
+.git
+.github
+.husky
+*.log
+docker-compose.yml
+Dockerfile
+render.yaml
