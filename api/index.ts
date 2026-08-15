@@ -12,6 +12,8 @@
 //   3. Point API_ORIGIN away / delete it.
 const API_ORIGIN = process.env.API_ORIGIN ?? 'https://ecommerce-backend-aot3.onrender.com';
 
+export const config = { runtime: 'edge' };
+
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN ?? '')
   .split(',')
   .map((origin) => origin.trim())

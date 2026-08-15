@@ -5,6 +5,8 @@
       "maxDuration": 10
     }
   },
+  "buildCommand": "",
+  "outputDirectory": "",
   "rewrites": [
     {
       "source": "/(.*)",
