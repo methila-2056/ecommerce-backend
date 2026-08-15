@@ -19,9 +19,17 @@ const envSchema = z.object({
   // reset links. Emails are dev-only until the notifications phase.
   FRONTEND_URL: z.string().default('http://localhost:5173'),
   // Secrets below are required by the auth module (Phase 2) but validated from
-  // the very first run so a missing secret is caught immediately.
-  JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 chars'),
-  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 chars'),
+  // the very first run so a missing secret is caught immediately. Test runs
+  // (npm test / CI) use built-in throwaway defaults so a fresh clone with no
+  // .env file can run the suite out of the box.
+  JWT_ACCESS_SECRET:
+    process.env.NODE_ENV === 'test'
+      ? z.string().default('test-only-access-secret-0123456789abcdef0123456789abcdef')
+      : z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 chars'),
+  JWT_REFRESH_SECRET:
+    process.env.NODE_ENV === 'test'
+      ? z.string().default('test-only-refresh-secret-0123456789abcdef0123456789abcdef')
+      : z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 chars'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL: z.string().default('30d'),
 
