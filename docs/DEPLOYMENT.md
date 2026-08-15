@@ -34,6 +34,34 @@ After the first deploy, set the secrets in the dashboard:
 The health check runs against `/health`; `/ready` reports database readiness (`503` until Mongo is
 reachable).
 
+### Current live demo
+
+The project is deployed for a free-tier portfolio demo (data is ephemeral in both cases):
+
+| Platform | URL | Notes |
+| -------- | --- | ----- |
+| Render (origin) | `https://ecommerce-backend-aot3.onrender.com` | Runs the app with `USE_IN_MEMORY_DB=true` |
+| Vercel (gateway) | `https://ecommerce-backend-ten-zeta.vercel.app` | Edge function proxying the Render origin |
+
+## Vercel
+
+Vercel serverless cannot host the MongoDB replica set the transactional checkout flow requires, so
+the Vercel deployment is a lightweight **edge gateway** (`api/index.ts`) that forwards every request
+1:1 to the Render origin (`API_ORIGIN` env var) and terminates CORS at the edge. A GitHub Actions
+schedule (`.github/workflows/keep-alive.yml`) pings the origin every 5 minutes so it never sleeps.
+
+Required env vars (set in the Vercel dashboard / `vercel env add`):
+
+| Variable       | Value                                   |
+| -------------- | --------------------------------------- |
+| `API_ORIGIN`   | `https://ecommerce-backend-aot3.onrender.com` |
+| `CORS_ORIGIN`  | Comma-separated browser origins (empty = reflect any) |
+
+> **Native Vercel deployment**: if you want the app itself to run on Vercel instead of a gateway,
+> you need a real MongoDB replica set (e.g. Atlas M10+). Then revert `api/index.ts` to
+> `export default createApp()`, add `DATABASE_URL` plus the JWT/webhook secrets, and remove
+> `API_ORIGIN`.
+
 ## Docker
 
 ```bash
