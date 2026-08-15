@@ -8,6 +8,20 @@ interface MongoServerErrorLike {
   code?: number;
 }
 
+// body-parser raises HttpError with a `type` like 'entity.parse.failed'
+// (malformed JSON), 'entity.too.large' (payload too big), 'entity.verify.failed'.
+interface HttpErrorLike {
+  type?: string;
+  status?: number;
+  statusCode?: number;
+}
+
+const isBodyParserError = (err: unknown): err is HttpErrorLike =>
+  typeof err === 'object' &&
+  err !== null &&
+  (err as HttpErrorLike).type?.startsWith('entity.') === true &&
+  ((err as HttpErrorLike).status ?? (err as HttpErrorLike).statusCode) !== undefined;
+
 // Single place where every error becomes a consistent JSON response.
 // Security rule: in production the client never sees stack traces or
 // internal messages for unexpected errors.
@@ -51,6 +65,14 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   ) {
     // Unique index violation.
     res.status(409).json({ success: false, message: 'Resource already exists' });
+    return;
+  }
+
+  if (isBodyParserError(err)) {
+    const status = err.status ?? err.statusCode ?? 400;
+    const message = status === 413 ? 'Request body too large' : 'Invalid JSON body';
+    requestLogger.warn({ err, requestId: req.id }, 'Malformed request body');
+    res.status(status).json({ success: false, message });
     return;
   }
 
