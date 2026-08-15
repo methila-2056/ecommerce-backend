@@ -1,13 +1,88 @@
+<div align="center">
+
 # E-Commerce Backend System
 
-A production-grade, secure REST API for an e-commerce platform — **Express + TypeScript + MongoDB**.
+**A production-grade, secure REST API platform for e-commerce — Express + TypeScript + MongoDB**
 
-Built as a from-scratch reference implementation covering the full commerce lifecycle: authentication
-and session management, a searchable catalog, a transactional checkout pipeline (orders → coupons →
-payments → inventory), reviews, wishlists, notifications, an admin dashboard and a complete audit trail.
-Every module is covered by integration tests that run against a real in-memory MongoDB replica set.
+![Node](https://img.shields.io/badge/node-20%2B-339933?logo=nodedotjs&logoColor=white&labelColor=339933&color=339933)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%209-47A248?logo=mongodb&logoColor=white)
+![CI](https://img.shields.io/github/actions/workflow/status/methila-2056/ecommerce-backend/ci.yml?branch=main&label=CI)
+![Tests](https://img.shields.io/badge/tests-18%20passing-brightgreen)
+![License](https://img.shields.io/badge/license-ISC-blue)
 
-## Highlights
+Live API → [`https://ecommerce-backend-ten-zeta.vercel.app`](https://ecommerce-backend-ten-zeta.vercel.app) · Docs → [`/api/v1/docs`](https://ecommerce-backend-ten-zeta.vercel.app/api/v1/docs)
+
+</div>
+
+---
+
+## Table of contents
+
+- [Overview](#overview)
+- [Live deployment](#live-deployment)
+- [Key features](#key-features)
+- [Architecture](#architecture)
+- [Tech stack](#tech-stack)
+- [Features by module](#features-by-module)
+- [Quick start](#quick-start)
+- [Testing](#testing)
+- [Scripts](#scripts)
+- [Environment](#environment)
+- [Deployment](#deployment)
+- [Roadmap](#roadmap)
+
+---
+
+## Overview
+
+A from-scratch reference implementation of the full commerce lifecycle: authentication and session
+management, a searchable catalog, a **transactional checkout pipeline** (orders → coupons → payments →
+inventory), reviews, wishlists, notifications, an admin dashboard and a complete audit trail.
+
+Every module is covered by integration tests that run against a real in-memory MongoDB replica set,
+and the project is deployed end-to-end with continuous integration running on every push.
+
+## Live deployment
+
+The API is deployed on two platforms and verified working:
+
+| Platform | URL | Role |
+| -------- | --- | ---- |
+| Render | [`https://ecommerce-backend-aot3.onrender.com`](https://ecommerce-backend-aot3.onrender.com) | Origin — runs the application |
+| Vercel | [`https://ecommerce-backend-ten-zeta.vercel.app`](https://ecommerce-backend-ten-zeta.vercel.app) | Edge gateway — public entry point, forwards to Render |
+
+#### 1. Health check — Render origin
+
+The `/health` endpoint reports service status, uptime and a timestamp.
+
+![Render origin health check](docs/images/deploy-render-health.png)
+
+#### 2. Interactive API docs — Render origin
+
+The OpenAPI specification is served as an interactive Swagger UI at `/api/v1/docs`.
+
+![Render origin API docs](docs/images/deploy-render-docs.png)
+
+#### 3. Health check — Vercel edge gateway
+
+The same endpoint reached through the Vercel edge gateway (`/health`).
+
+![Vercel gateway health check](docs/images/deploy-vercel-health.png)
+
+#### 4. Interactive API docs — Vercel edge gateway
+
+The docs are also served through the gateway, proving the full request/response path through Vercel.
+
+![Vercel gateway API docs](docs/images/deploy-vercel-docs.png)
+
+> **Why a gateway?** Vercel serverless functions cannot host the MongoDB replica set that the
+> transactional checkout requires, so the Vercel deployment is a lightweight edge function that
+> proxies 1:1 to the Render origin while terminating CORS at the edge. A GitHub Actions schedule
+> (`keep-alive.yml`) pings the origin every 5 minutes so the free Render service never sleeps.
+
+## Key features
 
 - **Transactional checkout** — order creation, stock reservation and payment confirmation happen in
   MongoDB **multi-document transactions** (replica-set required). Stock is never double-sold and money
@@ -24,6 +99,38 @@ Every module is covered by integration tests that run against a real in-memory M
   metadata, reviewable by admins.
 - **API-first** — interactive OpenAPI docs served at `/api/v1/docs` (Swagger UI).
 
+## Architecture
+
+```
+┌──────────────┐      ┌─────────────────────┐      ┌───────────────────────────┐
+│  Clients     │ ───▶ │  Vercel Edge        │ ───▶ │  Render (origin)          │
+│  Web / App / │      │  Gateway            │      │  Express 5 + TypeScript   │
+│  API tools   │      │  api/index.ts       │      │  src/core/app.ts          │
+└──────────────┘      └─────────────────────┘      └────────────┬──────────────┘
+                                                                 │
+                                                    ┌────────────▼──────────────┐
+                                                    │  MongoDB replica set      │
+                                                    │  (transactions, indexes)  │
+                                                    └───────────────────────────┘
+```
+
+```
+src/
+├── config/          env parsing (validated), logger, database connection
+├── core/            app factory, middleware (auth, authorize, rate-limit), routers, docs
+├── modules/         feature modules (auth, catalog, inventory, cart, order, coupon,
+│                    payment, review, wishlist, notification, user, admin)
+│   └── <module>/    routes.ts · controller.ts · service.ts · validators.ts · *.model.ts
+└── shared/          errors, response envelope, middleware, utils (audit, money)
+```
+
+- **Layered modules** — `routes → controller → service → model`. Controllers stay thin; business rules,
+  validation and transactions live in services.
+- **Single mutation path for money** — order/payment/inventory changes converge through
+  `order.service` and `payment.service` side-effect functions, each running inside a transaction.
+- **App factory** — `createApp()` returns an isolated Express instance, which is what lets the test
+  suite spin up a clean app per test file.
+
 ## Tech stack
 
 | Layer     | Choice                                              |
@@ -36,6 +143,7 @@ Every module is covered by integration tests that run against a real in-memory M
 | Testing   | Vitest + Supertest + mongodb-memory-server          |
 | Quality   | ESLint (strict TS), Prettier, `tsc --noEmit`        |
 | Security  | helmet, CORS allow-list, request size caps          |
+| Deploy    | Render (origin), Vercel (edge gateway), GitHub Actions (CI + keep-alive) |
 
 ## Features by module
 
@@ -55,25 +163,6 @@ Every module is covered by integration tests that run against a real in-memory M
 - **Reviews** — verified-purchase auto-approval, moderation queue, per-product rating aggregates.
 - **Wishlist & notifications** — personal wishlist; in-app notifications for order/review events.
 - **Admin** — dashboard summary, per-product performance, audit log browser.
-
-## Architecture
-
-```
-src/
-├── config/          env parsing (validated), logger, database connection
-├── core/            app factory, middleware (auth, authorize, rate-limit), routers, docs
-├── modules/         feature modules (auth, catalog, inventory, cart, order, coupon,
-│                    payment, review, wishlist, notification, user, admin)
-│   └── <module>/    routes.ts · controller.ts · service.ts · validators.ts · *.model.ts
-└── shared/          errors, response envelope, middleware, utils (audit, money)
-```
-
-- **Layered modules** — `routes → controller → service → model`. Controllers stay thin; business rules,
-  validation and transactions live in services.
-- **Single mutation path for money** — order/payment/inventory changes converge through
-  `order.service` and `payment.service` side-effect functions, each running inside a transaction.
-- **App factory** — `createApp()` returns an isolated Express instance, which is what lets the test
-  suite spin up a clean app per test file.
 
 ## Quick start
 
@@ -141,7 +230,7 @@ All configuration is validated at startup against `.env.example`. Notable variab
 | `PAYMENT_WEBHOOK_SECRET`    | HMAC secret shared with the gateway            |
 | `ALLOW_MOCK_AUTO_APPROVE_IN_PRODUCTION` | Demo-only opt-in (production guard)  |
 
-## Deployment notes
+## Deployment
 
 - Set `NODE_ENV=production` — enables `trust proxy` (correct client IPs behind a reverse proxy) and
   enforces the CORS allow-list.
@@ -152,6 +241,9 @@ All configuration is validated at startup against `.env.example`. Notable variab
 - Generate fresh secrets; never ship the `.env.example` placeholders. In production the app refuses
   to boot with placeholder secrets or with mock auto-approve enabled (unless
   `ALLOW_MOCK_AUTO_APPROVE_IN_PRODUCTION=true` is set explicitly — a demo-only escape hatch).
+
+Full platform-by-platform instructions (Render, Vercel gateway, Docker) live in
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Roadmap / possible extensions
 
