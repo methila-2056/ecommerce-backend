@@ -31,8 +31,12 @@ export async function connectDatabase(): Promise<void> {
       replSet: { count: 1 },
       instanceOpts: [{ args: ['--wiredTigerCacheSizeGB', '0.25'] }],
     });
-    const uri = `${memoryReplSet.getUri()}?retryWrites=false`;
-    await mongoose.connect(uri, { serverSelectionTimeoutMS: 10_000 });
+    const uri = memoryReplSet.getUri();
+    // retryWrites must be off for a single-node in-memory replset (the driver
+    // cannot confirm retryable-write support on this topology). Append it to
+    // the query string, which getUri() may already contain.
+    const connectionUri = `${uri}${uri.includes('?') ? '&' : '?'}retryWrites=false`;
+    await mongoose.connect(connectionUri, { serverSelectionTimeoutMS: 10_000 });
     logger.warn('Connected to embedded in-memory MongoDB (demo mode — data is NOT persistent)');
     return;
   }
