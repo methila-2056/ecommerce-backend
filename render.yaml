@@ -1,8 +1,9 @@
 # Render Blueprint — https://render.com/docs/blueprint-spec
 #
-# Deploys the API as a web service. MongoDB is expected to be external (Atlas
-# M10+ replica set or similar) — set DATABASE_URL to its connection string via
-# the dashboard or the `render deploy hook` after first deploy.
+# Deploys the API as a web service on the free plan. By default it boots an
+# embedded in-memory MongoDB replica set (USE_IN_MEMORY_DB=true) so the demo
+# runs with zero external accounts — data resets on every redeploy. Point
+# DATABASE_URL at a persistent replica set (e.g. Atlas) to keep data.
 #
 #   render blueprint launch    # first deploy
 #   render blueprint apply     # subsequent deploys
@@ -21,8 +22,10 @@ services:
         value: 0.0.0.0
       - key: PORT
         value: 3001
+      - key: USE_IN_MEMORY_DB
+        value: "true" # demo: no external database needed (data is ephemeral)
       - key: DATABASE_URL
-        sync: false # set in the dashboard: mongodb+srv://<user>:<pass>@<cluster>/ecommerce?replicaSet=<rs>
+        sync: false # optional when USE_IN_MEMORY_DB=true; set for persistence
       - key: JWT_ACCESS_SECRET
         sync: false # generate: openssl rand -hex 48
       - key: JWT_REFRESH_SECRET

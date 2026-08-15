@@ -133,6 +133,7 @@ All configuration is validated at startup against `.env.example`. Notable variab
 | Variable                    | Purpose                                        |
 | --------------------------- | ---------------------------------------------- |
 | `DATABASE_URL`              | MongoDB URI — **must include `replicaSet=`**   |
+| `USE_IN_MEMORY_DB`          | `true` → embedded in-memory replica set, no DB needed (demo) |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Token signing secrets (use `openssl rand -hex 48`) |
 | `CORS_ORIGIN`               | Comma-separated allow-list (production only)   |
 | `PAYMENT_PROVIDER`          | `mock` (dev/test)                              |

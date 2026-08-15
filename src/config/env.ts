@@ -9,7 +9,11 @@ const envSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   PORT: z.coerce.number().int().positive().max(65535).default(3000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  // Persistent MongoDB replica-set URI (transactions require a replica set).
+  // When USE_IN_MEMORY_DB=true, DATABASE_URL is not required and the app boots
+  // an embedded in-memory replica set instead (demo mode — data is ephemeral).
+  DATABASE_URL: z.string().default(''),
+  USE_IN_MEMORY_DB: z.enum(['true', 'false']).default('false'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   // Base URL of the frontend, used to build email verification / password
   // reset links. Emails are dev-only until the notifications phase.
@@ -64,6 +68,15 @@ if (!parsed.success) {
 }
 
 const env = parsed.data;
+
+// DATABASE_URL is only optional when the embedded in-memory demo database is
+// enabled. Keep the original fast-fail behaviour otherwise.
+if (env.USE_IN_MEMORY_DB !== 'true' && env.DATABASE_URL === '') {
+  console.error(
+    'Invalid environment configuration: DATABASE_URL is required (or set USE_IN_MEMORY_DB=true for the demo database)',
+  );
+  process.exit(1);
+}
 
 // Refuse to boot in production with placeholder secrets. The exact values that
 // ship in .env.example (and this repo) are public knowledge, so a deployment

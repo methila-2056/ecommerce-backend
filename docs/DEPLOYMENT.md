@@ -26,6 +26,11 @@ After the first deploy, set the secrets in the dashboard:
 | `PAYMENT_WEBHOOK_SECRET`  | `openssl rand -hex 32`                                           |
 | `CORS_ORIGIN` / `FRONTEND_URL` | Your real frontend origin                                    |
 
+> **Zero-dependency demo mode**: the Blueprint sets `USE_IN_MEMORY_DB=true`, so the service boots
+> an embedded in-memory MongoDB replica set and needs **no** external database account. This is
+> great for a free-tier demo but the data is ephemeral — it resets on every redeploy. To persist,
+> set `USE_IN_MEMORY_DB=false` and provide `DATABASE_URL` (Atlas M10+ or any replica set).
+
 The health check runs against `/health`; `/ready` reports database readiness (`503` until Mongo is
 reachable).
 
