@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.Document;
@@ -138,10 +139,10 @@ public class CatalogService {
             match.add(new Document("$text", new Document("$search", keyword.trim())));
         }
         if (category != null && !category.isBlank()) {
-            match.add(new Document("category", category));
+            match.add(new Document("category", equalsCi(resolveCategoryName(categoryRepository.findBySlug(category.trim()), category))));
         }
         if (brand != null && !brand.isBlank()) {
-            match.add(new Document("brand", brand));
+            match.add(new Document("brand", equalsCi(resolveBrandName(brandRepository.findBySlug(brand.trim()), brand))));
         }
         if (minPrice != null) {
             match.add(new Document("minPriceCents", new Document("$gte", minPrice)));
@@ -759,6 +760,22 @@ public class CatalogService {
             document.putAll(clause);
         }
         return document;
+    }
+
+    /** Case-insensitive exact match on the stored display name. */
+    private static Document equalsCi(String value) {
+        return new Document(
+                "$regex",
+                Pattern.compile("^" + Pattern.quote(value.trim()) + "$", Pattern.CASE_INSENSITIVE));
+    }
+
+    /** Prefer the canonical display name when the filter param is a slug. */
+    private static String resolveCategoryName(Optional<Category> ref, String fallback) {
+        return ref.map(c -> c.name).map(String::trim).orElseGet(() -> fallback.trim());
+    }
+
+    private static String resolveBrandName(Optional<Brand> ref, String fallback) {
+        return ref.map(b -> b.name).map(String::trim).orElseGet(() -> fallback.trim());
     }
 
     private static String orEmpty(String value) {
