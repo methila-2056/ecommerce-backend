@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/core/server.ts",
+    "seed": "tsx src/scripts/seed.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/core/server.js",
     "typecheck": "tsc --noEmit",

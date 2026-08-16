@@ -4,6 +4,7 @@ import { env } from '../config/env.js';
 import { logger } from '../config/logger.js';
 import { connectDatabase, disconnectDatabase } from '../config/db.js';
 import { startBackgroundJobs } from '../modules/notification/notification.worker.js';
+import { seedDemoData } from '../scripts/seed-data.js';
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -82,6 +83,13 @@ async function startServer(): Promise<void> {
 }
 
 connectDatabase()
+  .then(async () => {
+    // Demo mode uses an ephemeral in-memory database, so reseed on every
+    // boot (mirrors the live demo). Never touches DATABASE_URL-backed data.
+    if (env.USE_IN_MEMORY_DB === 'true') {
+      await seedDemoData();
+    }
+  })
   .then(startServer)
   .catch((err: unknown) => {
     logger.fatal({ err }, 'Failed to connect to database');
