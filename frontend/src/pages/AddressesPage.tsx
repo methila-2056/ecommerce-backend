@@ -39,7 +39,7 @@ export function AddressesPage() {
 
   useEffect(() => {
     if (user) void load();
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]);
 
   if (!user)
     return (

@@ -24,7 +24,7 @@ export function NotificationsPage() {
 
   useEffect(() => {
     if (user) void load();
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]);
 
   if (loading) return <div className="container section"><Spinner label="Loading notifications…" /></div>;
 
