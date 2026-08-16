@@ -7,8 +7,9 @@ The API is platform-agnostic. It needs three things in production:
    app (`npm run build` → `node dist/core/server.js`) remains in the repo as the reference
    implementation.
 2. A **MongoDB replica set** — multi-document transactions are used for checkout, so a standalone
-   mongod (or a free Atlas M0) is **not** enough. Use Atlas M10+, or self-host with `--replSet rs0`.
-   (The Java port has no in-memory demo mode, so a real replica set is always required in production.)
+    mongod (or a free Atlas M0) is **not** enough. Use Atlas M10+, or self-host with `--replSet rs0`.
+    (For a demo, the Java image can bundle its own replica set — see the in-memory mode below — so
+    no external MongoDB is required.)
 3. `NODE_ENV=production` so the app trusts one reverse-proxy hop (correct client IPs for rate
    limiting and secure cookies) and enforces the CORS allow-list.
 
@@ -24,7 +25,7 @@ After the first deploy, set the secrets in the dashboard:
 
 | Variable                  | Value                                                            |
 | ------------------------- | ---------------------------------------------------------------- |
-| `DATABASE_URL`            | `mongodb+srv://<user>:<pass>@<cluster>/ecommerce?replicaSet=<rs>` |
+| `DATABASE_URL`            | `mongodb+srv://<user>:<pass>@<cluster>/ecommerce?replicaSet=<rs>` (optional in demo mode) |
 | `JWT_ACCESS_SECRET`       | `openssl rand -hex 48`                                           |
 | `JWT_REFRESH_SECRET`      | `openssl rand -hex 48`                                           |
 | `PAYMENT_WEBHOOK_SECRET`  | `openssl rand -hex 32`                                           |
@@ -32,6 +33,12 @@ After the first deploy, set the secrets in the dashboard:
 
 The health check runs against `/health`; `/ready` reports database readiness (`503` until Mongo is
 reachable).
+
+> **In-memory demo mode**: the Java image bundles `mongod` + `mongosh`. When
+> `USE_IN_MEMORY_DB=true` and no `DATABASE_URL` is set, `java/start.sh` starts a fresh replica set
+> (`rs0`) inside the container and wires `DATABASE_URL` to it before launching the app. State lives
+> only in that container's filesystem and is wiped on every redeploy/restart — the current live demo
+> runs this way, so it never hits the Mongoose index conflict described below.
 
 > **Auto-deploy**: the `Java CI` workflow builds and tests the port on every push, then POSTs to a
 > Render **deploy hook**. Create one (Dashboard → your service → Settings → Deploy Hook) and store
@@ -82,7 +89,7 @@ The Node container runs as an unprivileged user and listens on `3001`. The Java 
 
 - [ ] `NODE_ENV=production`, `HOST=0.0.0.0`
 - [ ] Fresh JWT and webhook secrets (never the `.env.example` placeholders)
-- [ ] `DATABASE_URL` points at a **replica set**
+- [ ] `DATABASE_URL` points at a **replica set** — or set `USE_IN_MEMORY_DB=true` for the bundled demo DB
 - [ ] TLS terminated at the proxy; `trust proxy` enabled (automatic in production)
 - [ ] `CORS_ORIGIN` and `FRONTEND_URL` set to real origins
 - [ ] For real gateways: set `PAYMENT_PROVIDER`, register the webhook URL
