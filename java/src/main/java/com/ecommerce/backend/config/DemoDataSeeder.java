@@ -222,6 +222,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         int idx = 0;
         for (long price : def.prices()) {
             Variant v = new Variant();
+            v.id = new org.bson.types.ObjectId().toHexString();
             v.sku = def.name().toUpperCase().replaceAll("[^A-Z0-9]", "").substring(0, Math.min(6, def.name().length()))
                     + "-" + (1000 + idx);
             v.attributes = new LinkedHashMap<>();
