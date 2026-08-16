@@ -36,6 +36,11 @@ reachable).
 > **Auto-deploy**: the `Java CI` workflow builds and tests the port on every push, then POSTs to a
 > Render **deploy hook**. Create one (Dashboard → your service → Settings → Deploy Hook) and store
 > its URL in the repo secret `RENDER_DEPLOY_HOOK_URL`.
+>
+> **Use a fresh database**: `DATABASE_URL` should point at a *new* database (or a new cluster/DB name).
+> Spring Data creates its own index names, which collide with the Mongoose-created indexes
+> (`email_1`, …) left behind by the TypeScript app — the Java service refuses to start over an
+> existing collection with a conflicting index name (error 85).
 
 ### Current live demo
 
