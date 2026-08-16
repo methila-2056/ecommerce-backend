@@ -1,16 +1,20 @@
 # Deployment
 
-This API is platform-agnostic. It needs three things in production:
+The API is platform-agnostic. It needs three things in production:
 
-1. A Node.js runtime (20+) running the compiled output (`npm run build` → `node dist/core/server.js`).
+1. A runtime for the application. The **origin now runs the Java 21 / Spring Boot port** in `java/`
+   (`mvn package` → `java -jar target/ecommerce-backend-1.0.0.jar`); the original Express/TypeScript
+   app (`npm run build` → `node dist/core/server.js`) remains in the repo as the reference
+   implementation.
 2. A **MongoDB replica set** — multi-document transactions are used for checkout, so a standalone
    mongod (or a free Atlas M0) is **not** enough. Use Atlas M10+, or self-host with `--replSet rs0`.
+   (The Java port has no in-memory demo mode, so a real replica set is always required in production.)
 3. `NODE_ENV=production` so the app trusts one reverse-proxy hop (correct client IPs for rate
    limiting and secure cookies) and enforces the CORS allow-list.
 
 ## Render
 
-`render.yaml` is a Blueprint that provisions the web service:
+`render.yaml` is a Blueprint that provisions the web service (Docker runtime, builds `java/Dockerfile`):
 
 ```bash
 render blueprint launch
@@ -26,21 +30,18 @@ After the first deploy, set the secrets in the dashboard:
 | `PAYMENT_WEBHOOK_SECRET`  | `openssl rand -hex 32`                                           |
 | `CORS_ORIGIN` / `FRONTEND_URL` | Your real frontend origin                                    |
 
-> **Zero-dependency demo mode**: the Blueprint sets `USE_IN_MEMORY_DB=true`, so the service boots
-> an embedded in-memory MongoDB replica set and needs **no** external database account. This is
-> great for a free-tier demo but the data is ephemeral — it resets on every redeploy. To persist,
-> set `USE_IN_MEMORY_DB=false` and provide `DATABASE_URL` (Atlas M10+ or any replica set).
-
 The health check runs against `/health`; `/ready` reports database readiness (`503` until Mongo is
 reachable).
 
-### Current live demo
+> **Auto-deploy**: the `Java CI` workflow builds and tests the port on every push, then POSTs to a
+> Render **deploy hook**. Create one (Dashboard → your service → Settings → Deploy Hook) and store
+> its URL in the repo secret `RENDER_DEPLOY_HOOK_URL`.
 
-The project is deployed for a free-tier portfolio demo (data is ephemeral in both cases):
+### Current live demo
 
 | Platform | URL | Notes |
 | -------- | --- | ----- |
-| Render (origin) | `https://ecommerce-backend-aot3.onrender.com` | Runs the app with `USE_IN_MEMORY_DB=true` |
+| Render (origin) | `https://ecommerce-backend-aot3.onrender.com` | Runs the Java/Spring Boot port |
 | Vercel (gateway) | `https://ecommerce-backend-ten-zeta.vercel.app` | Edge function proxying the Render origin |
 
 ## Vercel
@@ -65,10 +66,12 @@ Required env vars (set in the Vercel dashboard / `vercel env add`):
 ## Docker
 
 ```bash
-docker compose up --build api     # full stack: mongo (replica set) + API
+docker compose up --build api     # full stack: mongo (replica set) + Node API
+docker build -t ecommerce-backend-java java   # build the Java/Spring Boot image
 ```
 
-The container runs as an unprivileged user and listens on `3001`.
+The Node container runs as an unprivileged user and listens on `3001`. The Java image
+(`java/Dockerfile`) does the same, using the same `PORT`/`HOST`/`DATABASE_URL` env contract.
 
 ## Environment checklist
 

@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: ecommerce-backend
+  data:
+    mongodb:
+      uri: ${DATABASE_URL:mongodb://localhost:27017/ecommerce}
+      auto-index-creation: true
+
+server:
+  address: ${HOST:0.0.0.0}
+  port: ${PORT:3000}
+
+# Matches the TypeScript/Express deployment contract:
+#   /health  -> liveness (uptime, timestamp)
+#   /ready   -> readiness (reports 503 until MongoDB is reachable)
+# Implemented by HealthController; actuator stays on /actuator/*.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    path: /api/v1/docs
+    operations-sorter: alpha
+    tags-sorter: alpha
+  api-docs:
+    path: /api/v1/api-docs
+
+# Validated app configuration (com.ecommerce.backend.config.AppConfig).
+# Each property keeps the exact deployment env var name via the ${...}
+# placeholder, so the Java app is a drop-in replacement for the TypeScript one
+# on Render/Vercel (NODE_ENV, DATABASE_URL, JWT_ACCESS_SECRET, ... all as-is).
+app:
+  node-env: ${NODE_ENV:development}
+  host: ${HOST:0.0.0.0}
+  port: ${PORT:3000}
+  database-url: ${DATABASE_URL:}
+  use-in-memory-db: ${USE_IN_MEMORY_DB:false}
+  cors-origin: ${CORS_ORIGIN:http://localhost:5173}
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  jwt-access-secret: ${JWT_ACCESS_SECRET:}
+  jwt-refresh-secret: ${JWT_REFRESH_SECRET:}
+  access-token-ttl: ${ACCESS_TOKEN_TTL:15m}
+  refresh-token-ttl: ${REFRESH_TOKEN_TTL:30d}
+  login-max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
+  account-lock-minutes: ${ACCOUNT_LOCK_MINUTES:15}
+  email-verification-token-ttl: ${EMAIL_VERIFICATION_TOKEN_TTL:24h}
+  password-reset-token-ttl: ${PASSWORD_RESET_TOKEN_TTL:15m}
+  refresh-cookie-name: ${REFRESH_COOKIE_NAME:rt}
+  refresh-cookie-same-site: ${REFRESH_COOKIE_SAME_SITE:lax}
+  shipping-flat-cents: ${SHIPPING_FLAT_CENTS:0}
+  free-shipping-threshold-cents: ${FREE_SHIPPING_THRESHOLD_CENTS:0}
+  payment-provider: ${PAYMENT_PROVIDER:mock}
+  payment-webhook-secret: ${PAYMENT_WEBHOOK_SECRET:dev-webhook-secret-change-me}
+  payment-mock-auto-approve: ${PAYMENT_MOCK_AUTO_APPROVE:true}
+  allow-mock-auto-approve-in-production: ${ALLOW_MOCK_AUTO_APPROVE_IN_PRODUCTION:false}

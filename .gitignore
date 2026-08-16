@@ -11,3 +11,6 @@ coverage/
 .vscode/
 
 .vercel
+
+# Java rewrite
+java/target/

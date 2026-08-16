@@ -1,0 +1,12 @@
+app:
+  node-env: test
+  # AppConfig only: when MONGO_URI is absent the startup validation still passes
+  # (the DB-backed tests skip themselves). The real connection always comes from
+  # the MONGO_URI env var supplied by CI or the local runner.
+  use-in-memory-db: true
+
+  # Throwaway defaults so a fresh clone with no .env can run the suite
+  # out of the box (mirrors the TypeScript test-mode behaviour).
+  jwt-access-secret: test-only-access-secret-0123456789abcdef0123456789abcdef
+  jwt-refresh-secret: test-only-refresh-secret-0123456789abcdef0123456789abcdef
+  payment-mock-auto-approve: true

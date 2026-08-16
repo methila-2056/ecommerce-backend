@@ -1,19 +1,24 @@
 # Render Blueprint — https://render.com/docs/blueprint-spec
 #
-# Deploys the API as a web service on the free plan. By default it boots an
-# embedded in-memory MongoDB replica set (USE_IN_MEMORY_DB=true) so the demo
-# runs with zero external accounts — data resets on every redeploy. Point
-# DATABASE_URL at a persistent replica set (e.g. Atlas) to keep data.
+# Deploys the Java/Spring Boot API as a web service on the free plan.
+# The transactional checkout flow requires MongoDB multi-document transactions,
+# so the service needs a MongoDB replica set — e.g. Atlas M10+ or any mongod
+# started with `--replSet rs0`. Point DATABASE_URL at it; data persists across
+# redeploys (this is the Java port — there is no in-memory demo mode like the
+# TypeScript app had).
 #
 #   render blueprint launch    # first deploy
 #   render blueprint apply     # subsequent deploys
+#
+# The Vercel edge gateway (api/index.ts) keeps the same public URL and proxies
+# to this origin, so no Vercel changes are needed.
 services:
   - type: web
     name: ecommerce-backend
-    runtime: node
+    runtime: docker
+    dockerfilePath: java/Dockerfile
+    dockerContext: java
     plan: free
-    buildCommand: npm ci && npm run build
-    startCommand: node dist/core/server.js
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -21,11 +26,9 @@ services:
       - key: HOST
         value: 0.0.0.0
       - key: PORT
-        value: 3001
-      - key: USE_IN_MEMORY_DB
-        value: "true" # demo: no external database needed (data is ephemeral)
+        value: "3001"
       - key: DATABASE_URL
-        sync: false # optional when USE_IN_MEMORY_DB=true; set for persistence
+        sync: false # required: MongoDB replica set (transactions), e.g. Atlas M10+
       - key: JWT_ACCESS_SECRET
         sync: false # generate: openssl rand -hex 48
       - key: JWT_REFRESH_SECRET

@@ -1,0 +1,53 @@
+name: Java CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Build and test (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Start MongoDB replica set
+        run: |
+          docker run -d --name ecommerce-mongo-ci -p 27017:27017 \
+            mongo:7 mongod --replSet rs0 --port 27017 --bind_ip_all
+          for i in $(seq 1 60); do
+            if docker exec ecommerce-mongo-ci mongosh --quiet \
+              --eval 'db.adminCommand("ping").ok' >/dev/null 2>&1; then
+              echo "mongo is up"
+              break
+            fi
+            sleep 2
+          done
+          docker exec ecommerce-mongo-ci mongosh --quiet \
+            --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+
+      - name: Build and run integration tests
+        run: mvn -B package
+        working-directory: java
+        env:
+          MONGO_URI: mongodb://localhost:27017/ecommerce?replicaSet=rs0
+
+  deploy:
+    name: Deploy origin to Render
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+      - name: Warn when deploy hook is missing
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL == '' }}
+        run: echo "::warning::RENDER_DEPLOY_HOOK_URL secret is not set — add it to auto-deploy to Render."

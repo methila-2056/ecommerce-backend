@@ -46,11 +46,13 @@ and the project is deployed end-to-end with continuous integration running on ev
 
 ## Live deployment
 
-The API is deployed on two platforms and verified working:
+The API is deployed on two platforms and verified working. The origin runs the
+**Java 21 / Spring Boot port** (`java/`), a drop-in replacement for the original
+Express implementation — same endpoints, same env-var contract, same behaviour.
 
 | Platform | URL | Role |
 | -------- | --- | ---- |
-| Render | [`https://ecommerce-backend-aot3.onrender.com`](https://ecommerce-backend-aot3.onrender.com) | Origin — runs the application |
+| Render | [`https://ecommerce-backend-aot3.onrender.com`](https://ecommerce-backend-aot3.onrender.com) | Origin — runs the Java/Spring Boot app |
 | Vercel | [`https://ecommerce-backend-ten-zeta.vercel.app`](https://ecommerce-backend-ten-zeta.vercel.app) | Edge gateway — public entry point, forwards to Render |
 
 #### 1. Health check — Render origin
@@ -81,6 +83,10 @@ The docs are also served through the gateway, proving the full request/response 
 > transactional checkout requires, so the Vercel deployment is a lightweight edge function that
 > proxies 1:1 to the Render origin while terminating CORS at the edge. A GitHub Actions schedule
 > (`keep-alive.yml`) pings the origin every 5 minutes so the free Render service never sleeps.
+>
+> **Java rewrite** — the Render origin now runs the Java 21 / Spring Boot port in `java/` instead of
+> the TypeScript app. It needs a real MongoDB replica set (there is no in-memory demo mode in the
+> Java version); see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) and `render.yaml`.
 
 ## Key features
 
@@ -135,15 +141,15 @@ src/
 
 | Layer     | Choice                                              |
 | --------- | --------------------------------------------------- |
-| Runtime   | Node.js 20+, TypeScript (strict), ESM               |
-| Framework | Express 5                                           |
+| Runtime   | Node.js 20+, TypeScript (strict), ESM — original; **Java 21 / Spring Boot 3 (port)** |
+| Framework | Express 5 — original; **Spring MVC / Spring Security (port)**                           |
 | Database  | MongoDB via Mongoose (replica set for transactions) |
 | Auth      | Argon2id, `jose` (JWT), refresh-token rotation      |
 | Validation| Zod (request body/query/params schemas)             |
 | Testing   | Vitest + Supertest + mongodb-memory-server          |
 | Quality   | ESLint (strict TS), Prettier, `tsc --noEmit`        |
 | Security  | helmet, CORS allow-list, request size caps          |
-| Deploy    | Render (origin), Vercel (edge gateway), GitHub Actions (CI + keep-alive) |
+| Deploy    | Render (origin, Java/Spring Boot), Vercel (edge gateway), GitHub Actions (CI + keep-alive) |
 
 ## Features by module
 
@@ -232,10 +238,14 @@ All configuration is validated at startup against `.env.example`. Notable variab
 
 ## Deployment
 
+- The **Render origin runs the Java/Spring Boot port** (`java/`), built from `java/Dockerfile` via
+  the `render.yaml` blueprint (`runtime: docker`). It requires a **MongoDB replica set** for the
+  transactional checkout — set `DATABASE_URL` (e.g. Atlas M10+) along with fresh JWT and webhook
+  secrets in the Render dashboard. Auto-deploy is wired through a Render deploy hook
+  (`RENDER_DEPLOY_HOOK_URL` repo secret) triggered by the `Java CI` workflow on every push to
+  `main`.
 - Set `NODE_ENV=production` — enables `trust proxy` (correct client IPs behind a reverse proxy) and
   enforces the CORS allow-list.
-- Use a managed MongoDB **replica set** (Atlas M10+ or a self-hosted `rs0`) — transactions are
-  non-negotiable for checkout integrity.
 - Put the API behind a TLS-terminating proxy (nginx / Caddy / Render's proxy) and point `FRONTEND_URL`
   and `CORS_ORIGIN` at real origins.
 - Generate fresh secrets; never ship the `.env.example` placeholders. In production the app refuses
