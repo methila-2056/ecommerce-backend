@@ -55,27 +55,11 @@ reachable).
 | -------- | --- | ----- |
 | Render (origin) | `https://ecommerce-backend-aot3.onrender.com` | Runs the Java/Spring Boot port |
 | Vercel (gateway) | `https://ecommerce-backend-ten-zeta.vercel.app` | Edge function proxying the Render origin |
-| Vercel (storefront) | `https://nova-shop-demo.vercel.app` | React/Vite customer storefront (`frontend/`) |
 
-The storefront calls the Vercel gateway with `credentials: 'include'` (set via `VITE_API_URL`, which
-defaults to the gateway). The refresh-token cookie is host-only on the gateway's `vercel.app` domain,
-so both the storefront and gateway being on `*.vercel.app` keeps it same-site (Lax) with no
-`SameSite=None` or extra CORS changes. Demo account: `demo@demo.com` / `Demo123!` (seeded on every
-in-memory restart together with 5 categories, 6 brands and 18 products).
-
-## Storefront (`frontend/`)
-
-React 19 + Vite + TypeScript SPA. Pages: home, shop (filter/search/sort/pagination), product detail
-(variant picker, reviews, wishlist), cart, checkout (coupons + mock payment), orders, and auth
-(login/register/verify-email/reset-password) plus account/addresses/notifications.
-
-```bash
-cd frontend
-npm install
-npm run dev           # local dev (calls the live gateway by default)
-npm run build         # type-check + production build
-vercel --prod --yes   # deploy (project: nova-shop-demo)
-```
+The gateway is a stateless Vercel edge function that forwards `/*` to the Render origin, setting CORS
+headers (`Access-Control-Allow-Origin` reflection + credentials) so external clients can call the API
+with `credentials: 'include'`. Demo account: `demo@demo.com` / `Demo123!` (seeded on every in-memory
+restart together with 5 categories, 6 brands and 18 products).
 
 Deployed through Vercel's Vite preset (`vercel.json` pins the build command and adds an SPA rewrite
 so client-side routes like `/shop` fall back to `index.html`). `VITE_API_URL` can point anywhere —
