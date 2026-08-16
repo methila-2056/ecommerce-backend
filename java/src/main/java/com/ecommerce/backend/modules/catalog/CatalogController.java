@@ -83,18 +83,6 @@ public class CatalogController {
                 catalogService.getProductBySlug(slug), "Product retrieved successfully"));
     }
 
-    @GetMapping("/categories")
-    public ResponseEntity<ApiResponse<List<CategoryPublic>>> listCategories() {
-        return ResponseEntity.ok(ApiResponse.success(
-                catalogService.listCategories(), "Categories retrieved successfully"));
-    }
-
-    @GetMapping("/brands")
-    public ResponseEntity<ApiResponse<List<BrandPublic>>> listBrands() {
-        return ResponseEntity.ok(ApiResponse.success(
-                catalogService.listBrands(), "Brands retrieved successfully"));
-    }
-
     // ------------------------------------------------------------- Admin
 
     @GetMapping("/search/admin")

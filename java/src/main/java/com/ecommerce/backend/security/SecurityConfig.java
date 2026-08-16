@@ -50,7 +50,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/payments/webhook/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/products",
                                 "/api/v1/products/*", "/api/v1/products/slug/**",
-                                "/api/v1/products/*/reviews", "/api/v1/products/*/reviews/rating")
+                                "/api/v1/products/*/reviews", "/api/v1/products/*/reviews/rating",
+                                "/api/v1/categories", "/api/v1/brands")
                         .permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
