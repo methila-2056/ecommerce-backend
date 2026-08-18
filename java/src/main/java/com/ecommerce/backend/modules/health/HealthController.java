@@ -24,6 +24,20 @@ public class HealthController {
         this.mongo = mongo;
     }
 
+    @GetMapping("/")
+    public Map<String, Object> root() {
+        return Map.of(
+                "success", true,
+                "message", "Service is running",
+                "data", Map.of(
+                        "service", "E-Commerce Backend System",
+                        "version", "1.0.0",
+                        "endpoints", Map.of(
+                                "docs", "/api/v1/docs",
+                                "health", "/health",
+                                "ready", "/ready")));
+    }
+
     @GetMapping("/health")
     public Map<String, Object> health() {
         long uptime = Duration.between(startedAt, Instant.now()).getSeconds();
