@@ -13,6 +13,24 @@ jobs:
     name: Ping health endpoint
     runs-on: ubuntu-latest
     steps:
-      - name: Ping
+      - name: Ping with retry (handles cold starts)
         run: |
-          curl -fsS -o /dev/null -w "status: %{http_code}\n" https://ecommerce-backend-aot3.onrender.com/health
+          ORIGIN="https://ecommerce-backend-aot3.onrender.com"
+          MAX_ATTEMPTS=3
+          WAIT_BETWEEN=20
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Attempt $attempt/$MAX_ATTEMPTS — waiting ${WAIT_BETWEEN}s for cold start..."
+            sleep $WAIT_BETWEEN
+
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$ORIGIN/health" || true)
+            echo "Health check returned HTTP $STATUS"
+
+            if [ "$STATUS" = "200" ]; then
+              echo "Service is alive."
+              exit 0
+            fi
+          done
+
+          echo "::warning::Service returned HTTP $STATUS after $MAX_ATTEMPTS attempts"
+          # Don't fail the workflow — a single missed ping is expected during deploys.

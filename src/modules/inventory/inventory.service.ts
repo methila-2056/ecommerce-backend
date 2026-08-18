@@ -87,7 +87,7 @@ export async function reserveStock(
       'variants.stock.available': { $gte: quantity },
     },
     { $inc: { 'variants.$.stock.reserved': quantity, 'variants.$.stock.available': -quantity } },
-    { new: true, session },
+    { returnDocument: 'after', session },
   ).lean();
 
   if (!updated) {
@@ -130,7 +130,7 @@ export async function releaseStock(
       'variants.stock.reserved': { $gte: quantity },
     },
     { $inc: { 'variants.$.stock.reserved': -quantity, 'variants.$.stock.available': quantity } },
-    { new: true, session },
+    { returnDocument: 'after', session },
   ).lean();
 
   if (!updated) {
@@ -174,7 +174,7 @@ export async function deductStock(
       'variants.stock.reserved': { $gte: quantity },
     },
     { $inc: { 'variants.$.stock.reserved': -quantity, 'variants.$.stock.quantity': -quantity } },
-    { new: true, session },
+    { returnDocument: 'after', session },
   ).lean();
 
   if (!updated) {
@@ -209,7 +209,7 @@ export async function restock(
   const updated = await Product.findOneAndUpdate(
     { _id: productId, 'variants._id': variantId },
     { $inc: { 'variants.$.stock.quantity': quantity, 'variants.$.stock.available': quantity } },
-    { new: true },
+    { returnDocument: 'after' },
   ).lean();
 
   if (!updated) throw AppError.notFound('Product variant not found');
@@ -268,7 +268,7 @@ export async function adjustStock(
     {
       $inc: { 'variants.$.stock.quantity': delta, 'variants.$.stock.available': delta },
     },
-    { new: true },
+    { returnDocument: 'after' },
   ).lean();
   if (!updated) throw AppError.internal('Stock update failed');
 

@@ -90,7 +90,7 @@ export async function verifyEmail(token: string): Promise<UserPublic> {
       $set: { emailVerifiedAt: new Date() },
       $unset: { emailVerificationTokenHash: '' },
     },
-    { new: true },
+    { returnDocument: 'after' },
   );
   if (!result) {
     throw AppError.badRequest('Verification token is invalid or has expired', {

@@ -37,7 +37,7 @@ async function getOrCreateCart(userId: string): Promise<InstanceType<typeof Cart
   return Cart.findOneAndUpdate(
     { userId },
     { $setOnInsert: { items: [] } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: 'after' },
   );
 }
 
