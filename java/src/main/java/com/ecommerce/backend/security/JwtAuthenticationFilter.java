@@ -43,8 +43,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(user, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (ApiException e) {
-                ErrorResponseWriter.writeError(response, e);
-                return;
+                // Token invalid — continue unauthenticated so permitAll()
+                // endpoints still work. Spring Security's authorization
+                // layer will reject the request on protected routes.
             }
         }
         chain.doFilter(request, response);
