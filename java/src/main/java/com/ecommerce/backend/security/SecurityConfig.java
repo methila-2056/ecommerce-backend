@@ -37,7 +37,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .anonymous(anonymous -> anonymous.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/health", "/ready", "/actuator/**",
+                        .requestMatchers("/", "/health", "/ready", "/actuator/**",
                                 "/api/v1/docs/**", "/api/v1/api-docs/**", "/error")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
