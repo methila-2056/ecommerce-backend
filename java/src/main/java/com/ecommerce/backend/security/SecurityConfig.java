@@ -38,7 +38,10 @@ public class SecurityConfig {
                 .anonymous(anonymous -> anonymous.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/health", "/ready", "/actuator/**",
-                                "/api/v1/docs/**", "/api/v1/api-docs/**", "/error")
+                                "/api/v1/docs/**", "/api/v1/api-docs/**",
+                                "/swagger-ui/**", "/swagger-ui.html",
+                                "/api-docs/**", "/v3/api-docs/**",
+                                "/error")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/verify-email").permitAll()
@@ -58,7 +61,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint())
                         .accessDeniedHandler(accessDeniedHandler()))
                 // Anchored to AuthorizationFilter (the last filter) so these run
-                // AFTER SecurityContextHolderFilter — otherwise the freshly
+                // AFTER SecurityContextHolderFilter â€” otherwise the freshly
                 // populated security context gets reset before authorization.
                 .addFilterBefore(new BodySizeLimitFilter(),
                         org.springframework.security.web.access.intercept.AuthorizationFilter.class)
