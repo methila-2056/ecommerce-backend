@@ -3,7 +3,7 @@
   "functions": {
     "api/index.ts": {
       "runtime": "@vercel/node",
-      "maxDuration": 60
+      "maxDuration": 30
     }
   },
   "buildCommand": "",

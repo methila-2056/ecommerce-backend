@@ -1,14 +1,15 @@
-node_modules
-dist
-.env
-.env.*
-!.env.example
-tests
-coverage
-.git
-.github
-.husky
-*.log
+# Vercel only needs the api/ gateway function — everything else is proxied
+# to the Render origin. Exclude heavy / irrelevant directories to keep
+# the deployment lean and fast.
+java/
+node_modules/
+tests/
+dist/
+docs/
+frontend/
+.github/
+.husky/
 docker-compose.yml
 Dockerfile
 render.yaml
+*.md
