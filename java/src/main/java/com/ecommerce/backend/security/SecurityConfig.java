@@ -38,9 +38,11 @@ public class SecurityConfig {
                 .anonymous(anonymous -> anonymous.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/health", "/ready", "/actuator/**",
-                                "/api/v1/docs/**", "/api/v1/api-docs/**",
-                                "/swagger-ui/**", "/swagger-ui.html",
-                                "/api-docs/**", "/v3/api-docs/**",
+                                "/api/v1/docs", "/api/v1/docs/**",
+                                "/api/v1/api-docs", "/api/v1/api-docs/**",
+                                "/swagger-ui", "/swagger-ui/**", "/swagger-ui.html",
+                                "/api-docs", "/api-docs/**",
+                                "/v3/api-docs", "/v3/api-docs/**",
                                 "/error")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
