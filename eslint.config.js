@@ -5,7 +5,16 @@ import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**', '*.config.js', '*.config.mjs', 'frontend/**'],
+    ignores: ['dist/**', 'coverage/**', 'node_modules/**', '*.config.js', '*.config.mjs', 'frontend/**', '.vercel/**'],
+  },
+  {
+    // Pin the project root explicitly: multiple tsconfig files would otherwise
+    // leave the parser unable to pick a single TSConfigRootDir.
+    languageOptions: {
+      parserOptions: {
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
