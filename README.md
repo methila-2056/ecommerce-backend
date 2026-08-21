@@ -8,7 +8,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%209-47A248?logo=mongodb&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-18%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-24%20passing-brightgreen)
 ![CI](https://img.shields.io/github/actions/workflow/status/methila-2056/ecommerce-backend/ci.yml?branch=main&label=CI)
 ![License](https://img.shields.io/badge/license-ISC-blue)
 
