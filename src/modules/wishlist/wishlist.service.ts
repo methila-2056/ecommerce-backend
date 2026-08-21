@@ -74,10 +74,13 @@ export async function addToWishlist(
   const product = await Product.exists({ _id: productId });
   if (!product) throw AppError.notFound('Product not found');
 
+  // Ensure the wishlist document exists, then append only when this product is
+  // not saved yet ($addToSet cannot be used here because each item carries a
+  // distinct addedAt timestamp, which would create duplicates).
+  await Wishlist.updateOne({ userId }, { $setOnInsert: { items: [] } }, { upsert: true });
   await Wishlist.updateOne(
-    { userId },
-    { $addToSet: { items: { productId, addedAt: new Date() } } },
-    { upsert: true },
+    { userId, 'items.productId': { $ne: productId } },
+    { $push: { items: { productId, addedAt: new Date() } } },
   );
   recordAudit('wishlist.item_added', { productId }, { actorId: userId });
   return getWishlist(userId);
