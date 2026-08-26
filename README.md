@@ -12,7 +12,9 @@
 ![CI](https://img.shields.io/github/actions/workflow/status/methila-2056/ecommerce-backend/ci.yml?branch=main&label=CI)
 ![License](https://img.shields.io/badge/license-ISC-blue)
 
-**Live API** → [`https://ecommerce-backend-ten-zeta.vercel.app`](https://ecommerce-backend-ten-zeta.vercel.app) · **Interactive docs** → [`/api/v1/docs`](https://ecommerce-backend-ten-zeta.vercel.app/api/v1/docs)
+**Live API** → [`https://ecommerce-backend-aot3.onrender.com`](https://ecommerce-backend-aot3.onrender.com) · **Interactive docs** → [`/api/v1/docs`](https://ecommerce-backend-aot3.onrender.com/api/v1/docs)
+
+> ⚡ Hosted on Render's free tier — the first request after inactivity may take ~30–60 s while the instance wakes up.
 
 </div>
 
@@ -88,17 +90,11 @@ as integer cents to avoid floating-point errors.
 
 ## Architecture
 
-```
-┌──────────────┐      ┌─────────────────────┐      ┌───────────────────────────┐
-│  Clients     │ ───▶ │  Vercel Edge        │ ───▶ │  Render (origin)          │
-│  Web / App / │      │  Gateway            │      │  Express 5 + TypeScript   │
-│  API tools   │      │  api/index.ts       │      │  src/core/app.ts          │
-└──────────────┘      └─────────────────────┘      └────────────┬──────────────┘
-                                                                 │
-                                                     ┌────────────▼──────────────┐
-                                                     │  MongoDB replica set      │
-                                                     │  (transactions, indexes)  │
-                                                     └───────────────────────────┘
+```mermaid
+flowchart LR
+    C["Clients<br/>Web / App / API tools"] --> G["Vercel Edge Gateway<br/>api/index.ts"]
+    G --> O["Render origin<br/>Express 5 + TypeScript<br/>src/core/app.ts"]
+    O --> DB[("MongoDB replica set<br/>transactions · indexes")]
 ```
 
 ```
@@ -259,10 +255,10 @@ All configuration is validated at startup against `.env.example`. Notable variab
 
 ## Deployment
 
-- The API deploys to **Render** as a Docker container (`render.yaml` blueprint). The live origin runs
-  the **Java 21 / Spring Boot port** (`java/`) — a drop-in replacement for this TypeScript app with
-  the same endpoints, env-var contract and behaviour. A **Vercel edge gateway** (`api/`) provides the
-  public entry point, proxies to the origin and terminates CORS at the edge.
+- The API deploys to **Render** as a Docker container (`render.yaml` blueprint) — this is the live
+  public origin. The repository also ships a **Java 21 / Spring Boot port** (`java/`) — a drop-in
+  replacement with the same endpoints, env-var contract and behaviour — and a **Vercel edge
+  gateway** (`api/`) that can proxy to the origin and terminate CORS at the edge.
 - Set `NODE_ENV=production` — enables `trust proxy` (correct client IPs behind a reverse proxy) and
   enforces the CORS allow-list.
 - Generate fresh secrets; never ship the `.env.example` placeholders. In production the app refuses
